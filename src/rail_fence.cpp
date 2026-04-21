@@ -1,85 +1,85 @@
-#include <cctype>
-#include <fstream>
 #include <iostream>
-#include <string>
 #include <vector>
+#include <string>
+#include <fstream>
 
 using namespace std;
 
-bool is_valid_message(const string &text) {
+string read_message_from_file(const string &filename) {
+    ifstream file(filename);
+    string content, line;
+    while (getline(file, line)) {
+        content += line;
+    }
+    return content;
+}
+
+string rail_fence_encrypt(const string &text, int key) {
+    if (key <= 1) return text;
+
+    vector<string> rail(key);
+    int row = 0;
+    bool down = true;
+
     for (char c : text) {
-        if (!isalpha(static_cast<unsigned char>(c)) && c != ' ') {
-            return false;
+        rail[row] += c;
+
+        if (row == 0) down = true;
+        else if (row == key - 1) down = false;
+
+        row += down ? 1 : -1;
+    }
+
+    string result;
+    for (auto &r : rail) result += r;
+    return result;
+}
+
+string rail_fence_decrypt(const string &cipher, int key) {
+    if (key <= 1) return cipher;
+
+    int n = cipher.length();
+    vector<vector<char>> rail(key, vector<char>(n, '\n'));
+
+    int row = 0;
+    bool down = true;
+
+    for (int i = 0; i < n; i++) {
+        rail[row][i] = '*';
+
+        if (row == 0) down = true;
+        else if (row == key - 1) down = false;
+
+        row += down ? 1 : -1;
+    }
+
+    int index = 0;
+    for (int i = 0; i < key; i++) {
+        for (int j = 0; j < n; j++) {
+            if (rail[i][j] == '*' && index < n) {
+                rail[i][j] = cipher[index++];
+            }
         }
     }
-    return true;
-}
 
-string rail_fence_encrypt(const string &plaintext, int rails) {
-    if (rails <= 1 || plaintext.empty()) return plaintext;
+    string result;
+    row = 0;
+    down = true;
 
-    vector<string> fence(rails, "");
-    int rail = 0;
-    int direction = 1;
+    for (int i = 0; i < n; i++) {
+        result += rail[row][i];
 
-    for (char c : plaintext) {
-        // TODO(student): Q6 can keep spaces as normal characters.
-        fence[rail] += c;
-        rail += direction;
-        if (rail == rails - 1 || rail == 0) direction = -direction;
+        if (row == 0) down = true;
+        else if (row == key - 1) down = false;
+
+        row += down ? 1 : -1;
     }
 
-    string ciphertext;
-    for (const string &row : fence) ciphertext += row;
-    return ciphertext;
-}
-
-string rail_fence_decrypt(const string &ciphertext, int rails) {
-    // TODO(student): Q5
-    return ciphertext;
-}
-
-string read_message_from_file(const string &path) {
-    ifstream fin(path);
-    string line;
-    getline(fin, line);
-    return line;
+    return result;
 }
 
 int main() {
-    cout << "=== Rail Fence Cipher Demo ===\n";
-    cout << "1. Encrypt\n2. Decrypt\n3. Read from file and encrypt\nChoose: ";
-
-    int choice;
-    cin >> choice;
-    cin.ignore();
-
-    string message;
-    int rails;
-
-    if (choice == 3) {
-        message = read_message_from_file("data/input.txt");
-        cout << "Message from file: " << message << "\n";
-    } else {
-        cout << "Enter message: ";
-        getline(cin, message);
-    }
-
-    cout << "Enter rails: ";
-    cin >> rails;
-
-    if (!is_valid_message(message)) {
-        cout << "Invalid input. Only letters and spaces are allowed.\n";
-        return 0;
-    }
-
-    if (choice == 1 || choice == 3) {
-        cout << "Ciphertext: " << rail_fence_encrypt(message, rails) << "\n";
-    } else if (choice == 2) {
-        cout << "Plaintext: " << rail_fence_decrypt(message, rails) << "\n";
-    } else {
-        cout << "Invalid choice.\n";
-    }
-
+    string text = read_message_from_file("data/input.txt");
+    cout << rail_fence_encrypt(text, 3) << endl;
     return 0;
 }
